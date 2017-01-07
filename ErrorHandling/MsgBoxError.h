@@ -1,6 +1,7 @@
 #ifndef __MSGBOXERR_HDR_H__
 #define __MSGBOXERR_HDR_H__
 
+
 #include "..\Common.h"
 
 #ifdef _MSC_VER
@@ -26,7 +27,7 @@
         int err = GetLastError(); \
         MsgBoxDefaultFuncError(x, y, FUNCSTR, __LINE__ - 1, err, __GETLASTERR); \
     } while (0) \
-
+//_get_errno possible replacement?
 #define MSGBOX_ERRNO(x, y) \
     do { \
         int err = errno; \
@@ -40,8 +41,15 @@
     } while (0) \
 
 //MsgBoxError.c
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 PWSTR ToWideStr(PCSTR to_convert);
 void MsgBoxDefaultFuncError(HWND hwnd, PCWSTR failed_func, PCWSTR caller_func, const ULONG line, const INT err,  const int flag);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__MSGBOXERR_HDR_H__

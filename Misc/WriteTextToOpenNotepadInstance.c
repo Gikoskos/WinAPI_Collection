@@ -1,4 +1,4 @@
-/* API to write text to an open instance of Windows Notepad */
+﻿/* API to write text to an open instance of Windows Notepad */
 
 #ifndef UNICODE
 # define UNICODE
@@ -100,6 +100,9 @@ BOOL WriteToOpenNotepadW(_In_ PCWSTR szText, _In_ BOOL fAppendText)
 
     } while( Process32NextW(hProcessSnap, &pe32) );
 
+    if (!ret) {
+        fprintf(stderr, "Couldn't find running instances of notepad.exe\n");
+    }
 CLEANUP:
     if (hProcessSnap) CloseHandle(hProcessSnap);
 
@@ -127,10 +130,10 @@ BOOL WriteToOpenNotepadAnimatedW(_In_ PCWSTR szText,
 
 int wmain(int argc, wchar_t **argv)
 {
-    wchar_t text[] = L"U HAV BEEN HAXXED by \r\n L33t HAxx0R GIKOSKOS \r\n GIB MONI PLZ";
+    wchar_t text[] = L"Test text test text test hello world teast est\r\n test teste stjoesijtioe\r\n jfdisoij\r\n";
     int arr_sz = sizeof text / sizeof *text;
 
-    WriteToOpenNotepadAnimatedW(text, arr_sz, 10);
+    WriteToOpenNotepadAnimatedW(text, arr_sz, 100);
 
     return 0;
 }
