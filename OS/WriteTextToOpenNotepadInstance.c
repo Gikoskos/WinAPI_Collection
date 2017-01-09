@@ -1,21 +1,14 @@
 ﻿/* API to write text to an open instance of Windows Notepad */
 
-#ifndef UNICODE
-# define UNICODE
-#endif
+#include <Common.h>
 
-#ifndef _UNICODE
-# define _UNICODE
-#endif
-
-#include <windows.h>
 #include <windowsx.h> //Edit_SetSel, Edit_ReplaceSel
 #include <stdio.h> //fprintf
 #include <tlhelp32.h>
 
 #define P_ERR(func) \
     if (GetLastError()) { \
-        fprintf(stderr, "%s failed with GetLastError == %d", func, GetLastError()); \
+        fprintf(stderr, "%s failed with GetLastError == %ld", func, GetLastError()); \
     }
 
 typedef struct __NOTEPADWINDOW {

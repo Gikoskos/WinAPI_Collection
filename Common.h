@@ -18,17 +18,20 @@
 
 #include <windows.h>
 #include <errno.h>
+#include <tchar.h>
 
 #ifndef _MSC_VER
 # undef __CRT__NO_INLINE
 #endif
 #include <strsafe.h> //win32 native string handling
 
-
-#define win_free(x) HeapFree(GetProcessHeap(), 0, x)
-#define win_malloc(x) HeapAlloc(GetProcessHeap(), 0, x)
-#define win_realloc(x, y) HeapReAlloc(GetProcessHeap(), 0, x, y)
-#define win_calloc(x, y) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (x) * y)
+#ifndef _WINAPI_EASY_HEAP_MACROS
+# define win_free(x) HeapFree(GetProcessHeap(), 0, x)
+# define win_malloc(x) HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS, x)
+# define win_realloc(x, y) HeapReAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS, x, y)
+# define win_calloc(x, y) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY | HEAP_GENERATE_EXCEPTIONS, (x) * y)
+# define _WINAPI_EASY_HEAP_MACROS 1
+#endif
 
 
 #endif //__COMMON_HDR_H__
