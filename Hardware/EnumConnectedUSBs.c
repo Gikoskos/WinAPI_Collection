@@ -171,32 +171,33 @@ void deleteSSLList(SSLList **ssllList, CustomDataCallback freeData)
 
 
 /**
- * @brief Fill a PROCESSENTRY32W array with data from all running processes
+ * @brief Extract USB IDs from a given devpath
  *
- * Get all PROCESSENTRY32W data for every process that's currently running
- * on your Windows system.
+ * Extracts USB IDs from a devpath string, converts them to
+ * unsigned long and stores them in a USBDEV_DATA structure.
  *
- * @param pe32List
- * @return The number of running processes on the system, or 0 on error.
+ * @param dev The USB IDs are stored in this structure.
+ * @param devpath Wide char string that contains the device system path. 
+ * @return TRUE on success, FALSE if the arguments are invalid.
  */
-BOOL GetDevIDs(USBDEV_DATA *dev, TCHAR *devpath)
+BOOL GetDevIDs(USBDEV_DATA *dev, wchar_t *devpath)
 {
-    if (devpath == NULL)  return FALSE;
+    if (!devpath || !dev)  return FALSE;
     /* precaution to check if devicepath actually has vid and pid stored */
     if (devpath[8] == 'v' && devpath[9] == 'i' && devpath[10] == 'd') {
-        TCHAR temp[5];
+        wchar_t temp[5];
 
         temp[4] = '\0';
         temp[0] = devpath[12];
         temp[1] = devpath[13];
         temp[2] = devpath[14];
         temp[3] = devpath[15];
-        dev->vid = _tcstoul(temp, NULL, 16);
+        dev->vid = wcstoul(temp, NULL, 16);
         temp[0] = devpath[21];
         temp[1] = devpath[22];
         temp[2] = devpath[23];
         temp[3] = devpath[24];
-        dev->pid = _tcstoul(temp, NULL, 16);
+        dev->pid = wcstoul(temp, NULL, 16);
         return TRUE;
     }
     return FALSE;
