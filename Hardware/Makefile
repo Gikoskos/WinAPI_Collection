@@ -1,7 +1,7 @@
 CC = gcc
-CPP = -I./../ -municode
-LINKER = -lsetupapi
+CPP = -I./../
 CFLAGS = -Wall
+LINKER = -lsetupapi
 
 SRCS = $(wildcard *.c)
 EXES = $(patsubst %.c,%.exe,$(SRCS))

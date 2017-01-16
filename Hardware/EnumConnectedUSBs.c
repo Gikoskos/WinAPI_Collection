@@ -1,6 +1,7 @@
 #include <Common.h>
 
-#include <stdio.h> //fprintf
+#include <stdio.h>
+#include <stdlib.h>
 #include <setupapi.h>
 #include <initguid.h>
 #include <usbiodef.h> //for GUID_DEVINTERFACE_USB_DEVICE
@@ -10,13 +11,163 @@
         fprintf(stderr, "%s failed with GetLastError == %ld", func, GetLastError()); \
     }
 
-typedef struct _USBDEVICE_NODE {
-    SLIST_ENTRY ItemEntry;
-    PWSTR *szDescription;
-    PWSTR *sz;
+typedef struct _USBDEV_DATA {
+    PWSTR *szDesc;
     ULONG pid; //product ID
     ULONG vid; //vendor ID
 } USBDEV_DATA;
+
+
+/*****************************************************************************************
+ *****************************************************************************************
+ ******************singly linked list with sentinel implementation from ******************
+ *************https://github.com/Gikoskos/Data_Structures_and_Algorithms_in_C*************
+ *****************************************************************************************
+ *****************************************************************************************/
+
+typedef void (*CustomDataCallback)(void*);
+
+
+typedef struct _SLListNode {
+    void *pData;
+    struct _SLListNode *nxt;
+} SLListNode;
+
+typedef struct _SSLList {
+    SLListNode *head, *sentinel;
+} SSLList;
+
+
+SSLList *newSSLList(void)
+{
+    SSLList *newList = calloc(1, sizeof(SSLList));
+
+    newList->head = calloc(1, sizeof(SLListNode));
+    newList->sentinel = newList->head;
+
+    return newList;
+}
+
+SLListNode *insertNodeSSLList(SSLList *ssllList, void *pData)
+{
+    SLListNode *new_node = NULL;
+
+    if (ssllList) {
+
+        new_node = malloc(sizeof(SLListNode));
+
+        new_node->pData = pData;
+
+        new_node->nxt = ssllList->head;
+        ssllList->head = new_node;
+
+    }
+
+    return new_node;
+}
+
+SLListNode *appendNodeSSLList(SSLList *ssllList, void *pData)
+{
+    SLListNode *new_node = NULL;
+
+    if (ssllList) {
+        if (ssllList->sentinel == ssllList->head) {
+
+            new_node = insertNodeSSLList(ssllList, pData);
+            
+        } else {
+            SLListNode *curr;
+
+            new_node = malloc(sizeof(SLListNode));
+
+            new_node->pData = pData;
+            new_node->nxt = ssllList->sentinel;
+
+            for (curr = ssllList->head; curr->nxt != ssllList->sentinel; curr = curr->nxt);
+
+            curr->nxt = new_node;
+        }
+    }
+
+    return new_node;
+}
+
+void *deleteNodeSSLList(SSLList *ssllList, void *pData)
+{
+    void *pRet = NULL;
+
+    if (ssllList) {
+        SLListNode *curr, *prev = NULL;
+
+        ssllList->sentinel->pData = pData;
+        for (curr = ssllList->head; curr->pData != pData; curr = curr->nxt)
+            prev = curr;
+
+        if (curr != ssllList->sentinel) {
+            pRet = pData;
+
+            if (prev)
+                prev->nxt = curr->nxt;
+            else
+                ssllList->head = curr->nxt;
+
+            free(curr);
+        }
+    }
+
+    return pRet;
+}
+
+SLListNode *findNodeSSLList(SSLList *ssllList, void *pToFind)
+{
+    SLListNode *curr = NULL;
+
+    if (ssllList) {
+        ssllList->sentinel->pData = pToFind;
+        for (curr = ssllList->head; curr->pData != ssllList->sentinel; curr = curr->nxt);
+
+        if (curr == ssllList->sentinel)
+            curr = NULL;
+    }
+
+    return curr;
+}
+
+void traverseSSLList(SSLList *ssllList, CustomDataCallback handleData)
+{
+    if (ssllList && handleData)
+        for (SLListNode *curr = ssllList->head; curr != ssllList->sentinel; curr = curr->nxt)
+            handleData(curr->pData);
+}
+
+void deleteSSLList(SSLList **ssllList, CustomDataCallback freeData)
+{
+    if (ssllList) {
+        SLListNode *curr, *tmp;
+
+        for (curr = (*ssllList)->head; curr != (*ssllList)->sentinel;) {
+            if (freeData)
+                freeData(curr->pData);
+
+            tmp = curr;
+            curr = curr->nxt;
+            free(tmp);
+        }
+
+        if (*ssllList) {
+            free((*ssllList)->sentinel);
+            free(*ssllList);
+            *ssllList = NULL;
+        }
+    }
+}
+
+/*****************************************************************************************
+ *****************************************************************************************
+ *****************************************************************************************
+ *****************************************************************************************
+ *****************************************************************************************
+ *****************************************************************************************/
 
 
 /**
@@ -52,93 +203,80 @@ BOOL GetDevIDs(USBDEV_DATA *dev, TCHAR *devpath)
 }
 
 /**
- * @brief Fill a USBDEV_DATA array with data from all connected USB devices
+ * @brief Fills a singly linked list with data from all connected USB devices
  *
- * Get all USBDEV_DATA data for every USB device that's currently connected
- * on the PC.
+ * This function creates a new SSLList and scans the PC for all connected
+ * USB devices and hubs. For every USB device found, a new USBDEV_DATA structure
+ * is dynamically allocated and filled with that USB device's vendor and product IDs,
+ * and a short description string in WinAPI utf-16 format.
  *
- * @param pe32List
- * @return The number of running processes on the system, or 0 on error.
+ * @return An SSLList with all the connected USB devices, if everything ran successfully. NULL on failure
  */
-BOOL GetConnectedUSBDevs(_Out_ USBDEV_DATA **dev)
+SSLList *GetConnectedUSBDevList(void)
 {
     HDEVINFO hUSBDevInfo;
-    SP_DEVICE_INTERFACE_DATA USBDevIntf, USBHubIntf;
-    SP_DEVICE_INTERFACE_DETAIL_DATA *USBDevIntfDetail, *USBHubIntfDetail;
+    SP_DEVICE_INTERFACE_DATA USBDevIntf;
+    SP_DEVICE_INTERFACE_DETAIL_DATA *USBDevIntfDetail;
     SP_DEVINFO_DATA DevData;
-    USBDEV_DATA usbDev;
-    DWORD dwSize, dwUSBDevIdx = 0, dwUSBHubIdx = 0;
-    PWSTR szUSBDevName;
+    DWORD dwSize, dwUSBDevIdx = 0;
     wchar_t tmp;
     UINT idx = 0;
+    SSLList *usbList = newSSLList();
 
-    hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE,
-                                      NULL,
-                                      NULL,
-                                      DIGCF_PRESENT | 
-                                      DIGCF_ALLCLASSES | 
-                                      DIGCF_DEVICEINTERFACE);
+    hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 0, 0,
+                                      DIGCF_PRESENT | DIGCF_ALLCLASSES | DIGCF_DEVICEINTERFACE);
     if (hUSBDevInfo == INVALID_HANDLE_VALUE) {
         P_ERR("SetupDiGetClassDevsW");
-        return FALSE;
+        return 0;
     }
 
     USBDevIntf.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-    if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo,
-                                     NULL,
-                                     &GUID_DEVINTERFACE_USB_DEVICE,
-                                     dwUSBDevIdx,
-                                     &USBDevIntf)
-        ) {
+    if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, 0, &GUID_DEVINTERFACE_USB_DEVICE, dwUSBDevIdx, &USBDevIntf)) {
         P_ERR("SetupDiEnumDeviceInterfaces");
         SetupDiDestroyDeviceInfoList(hUSBDevInfo);
-        return FALSE;
+        return 0;
     }
 
     while (GetLastError() != ERROR_NO_MORE_ITEMS) {
+        USBDEV_DATA *usbDev = win_calloc(1, sizeof(USBDEV_DATA));
+
         DevData.cbSize = sizeof(DevData);
-        SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &USBDevIntf, NULL, 0, &dwSize, NULL);
+        SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &USBDevIntf, 0, 0, &dwSize, 0);
 
         USBDevIntfDetail = win_malloc(dwSize);
         USBDevIntfDetail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
-        if (!SetupDiGetDeviceInterfaceDetail(hUSBDevInfo,
-                                            &USBDevIntf,
-                                            USBDevIntfDetail,
-                                            dwSize,
-                                            &dwSize,
-                                            &DevData)
-            ) {
+        if (!SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &USBDevIntf, USBDevIntfDetail, dwSize, &dwSize, &DevData)) {
             P_ERR("SetupDiGetDeviceInterfaceDetail");
+            win_free(usbDev);
             goto SKIP_DEVICE;
         }
 
-        if (!GetDevIDs(&usbDev, USBDevIntfDetail->DevicePath))
+        if (!GetDevIDs(usbDev, USBDevIntfDetail->DevicePath)) {
+            win_free(usbDev);
             goto SKIP_DEVICE;
-
-        wprintf(L"%04x:%04x\n", usbDev.vid, usbDev.pid);
+        }
 
         dwSize = 0;
-        if (!SetupDiGetDeviceRegistryProperty(hUSBDevInfo, 
-                                              &DevData,
-                                              SPDRP_DEVICEDESC,
-                                              NULL, (PBYTE)&tmp, sizeof(wchar_t),
-                                              &dwSize)
-            &&
-            GetLastError() == ERROR_INSUFFICIENT_BUFFER
-           ) {
-            szUSBDevName = win_malloc(dwSize);
-            SetupDiGetDeviceRegistryProperty(hUSBDevInfo, 
-                                             &DevData,
-                                             SPDRP_DEVICEDESC,
-                                             NULL,
-                                             (PBYTE)szUSBDevName,
-                                             dwSize,
-                                             NULL);
-            wprintf(L"len = %ld\tstr = %s\n", dwSize, szUSBDevName);
-            win_free(szUSBDevName);
-        } else
+        if (!SetupDiGetDeviceRegistryProperty(hUSBDevInfo, &DevData, SPDRP_DEVICEDESC, 0, (PBYTE)&tmp, sizeof(wchar_t), &dwSize)) {
+
+            if (dwSize) {
+
+                dwSize++;
+                usbDev->szDesc = win_malloc(dwSize);
+                if (!SetupDiGetDeviceRegistryProperty(hUSBDevInfo, &DevData, SPDRP_DEVICEDESC, 0, (PBYTE)usbDev->szDesc, dwSize, 0)) {
+                    P_ERR("SetupDiGetDeviceRegistryProperty");
+                    win_free(usbDev->szDesc);
+                    usbDev->szDesc = 0;
+                }
+
+            }
+
+        } else {
             P_ERR("SetupDiGetDeviceRegistryProperty");
+        }
+
+        appendNodeSSLList(usbList, (void*)usbDev);
 
 SKIP_DEVICE:
         idx++;
@@ -153,13 +291,36 @@ SKIP_DEVICE:
 
     SetupDiDestroyDeviceInfoList(hUSBDevInfo);
 
-    return FALSE;
+    return usbList;
 }
 
-int wmain(int argc, wchar_t **argv)
+void PrintUSBData(void *param)
 {
-    USBDEV_DATA *usb_dev_array;
+    USBDEV_DATA *dev = (USBDEV_DATA*)param;
+
+    wprintf(L"USB ID %04x:%04x\t Description = %s\n", dev->pid, dev->pid, dev->szDesc);
+}
+
+void DeleteUSBDesc(void *param)
+{
+    USBDEV_DATA *dev = (USBDEV_DATA*)param;
+
+    win_free(dev->szDesc);
+}
+
+void HeapFreeWrapper(void *param)
+{
+    win_free(param);
+}
+
+int main(void)
+{
+    SSLList *usbList = GetConnectedUSBDevList();
  
-    GetConnectedUSBDevs(&usb_dev_array);
+    traverseSSLList(usbList, PrintUSBData);
+    traverseSSLList(usbList, DeleteUSBDesc);
+
+    deleteSSLList(&usbList, HeapFreeWrapper);
+
     return 0;
 }
