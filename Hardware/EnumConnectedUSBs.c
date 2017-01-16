@@ -207,9 +207,9 @@ BOOL GetDevIDs(USBDEV_DATA *dev, wchar_t *devpath)
  * @brief Fills a singly linked list with data from all connected USB devices
  *
  * This function creates a new SSLList and scans the PC for all connected
- * USB devices and hubs. For every USB device found, a new USBDEV_DATA structure
+ * USB devices (and hubs in the future). For every USB device found, a new USBDEV_DATA structure
  * is dynamically allocated and filled with that USB device's vendor and product IDs,
- * and a short description string in WinAPI utf-16 format.
+ * and a short description string in WinAPI utf-16 (if you call WinAPI's encoding UTF-16) format.
  *
  * @return An SSLList with all the connected USB devices, if everything ran successfully. NULL on failure
  */
