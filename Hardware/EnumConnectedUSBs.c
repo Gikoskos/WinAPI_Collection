@@ -299,19 +299,15 @@ void PrintUSBData(void *param)
 {
     USBDEV_DATA *dev = (USBDEV_DATA*)param;
 
-    wprintf(L"USB ID %04x:%04x\t Description = %s\n", dev->pid, dev->pid, dev->szDesc);
+    wprintf(L"USB ID %04x:%04x\t Description = %s\n", dev->pid, dev->vid, dev->szDesc);
 }
 
-void DeleteUSBDesc(void *param)
+void DeleteUSBData(void *param)
 {
     USBDEV_DATA *dev = (USBDEV_DATA*)param;
 
     win_free(dev->szDesc);
-}
-
-void HeapFreeWrapper(void *param)
-{
-    win_free(param);
+    win_free(dev);
 }
 
 int main(void)
@@ -319,9 +315,8 @@ int main(void)
     SSLList *usbList = GetConnectedUSBDevList();
  
     traverseSSLList(usbList, PrintUSBData);
-    traverseSSLList(usbList, DeleteUSBDesc);
 
-    deleteSSLList(&usbList, HeapFreeWrapper);
+    deleteSSLList(&usbList, DeleteUSBData);
 
     return 0;
 }
