@@ -135,8 +135,6 @@ void RemoveWinKeylogger(void)
 //////////////////////////////////////////////////////////////////////////
 //Functions for storing the logged input in a buffer and handling the buffer.
 //////////////////////////////////////////////////////////////////////////
-#include <stdio.h>
-
 static WCHAR szInputBuff[INPUT_BUFFER_SIZE] = { 0 };
 static size_t curr_idx = 0;
 
