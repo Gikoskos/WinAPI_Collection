@@ -18,13 +18,6 @@
 
 #define INPUT_BUFFER_SIZE 255
 
-
-extern HANDLE hKeyHookThread, hKillThreadEvent;
-extern CRITICAL_SECTION csReadKeystroke;
-extern HHOOK LLKeyboardHook;
-extern WCHAR szInputBuff[INPUT_BUFFER_SIZE];
-extern BOOL buffer_is_full;
-
 void StartWinKeylogger(void);
 void RemoveWinKeylogger(void);
 BOOL ReadNextCharToInputBuffer(size_t *buff_len);
