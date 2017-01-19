@@ -12,7 +12,7 @@ typedef struct _keystroke_data {
 HHOOK LLKeyboardHook = NULL;
 HANDLE hKeyHookThread = NULL, hKillThreadEvent, hKeystrokeEvent;
 CRITICAL_SECTION csReadKeystroke;
-volatile KEYSTROKE g_keystroke = {.key_is_pressed = FALSE}; //key_is_pressed is initialized to 0 by default
+volatile KEYSTROKE g_keystroke = {.key_is_pressed = FALSE};
 
 static DWORD WINAPI LLKeyboardHookThread(PVOID args);
 static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM key_state, LPARAM keyhook_data);
