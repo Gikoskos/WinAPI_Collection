@@ -1,6 +1,6 @@
 CC = gcc
 CPP = -I./../ -municode
-LINKER = 
+LINKER = -ladvapi32
 CFLAGS = -Wall
 
 SRCS = $(wildcard *.c)
